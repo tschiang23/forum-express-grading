@@ -1,5 +1,5 @@
-const { Restaurant, Category, Comment, User } = require('../models')
-const { getOffset, getPagination } = require('../helpers/pagination-helper')
+const { Restaurant, Category, Comment, User } = require('../../models')
+const { getOffset, getPagination } = require('../../helpers/pagination-helper')
 const sequelize = require('sequelize')
 const restaurantController = {
   getRestaurants: async (req, res, next) => {
