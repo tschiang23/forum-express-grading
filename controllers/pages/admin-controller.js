@@ -43,26 +43,13 @@ const adminController = {
       next(err)
     }
   },
-  postRestaurant: async (req, res, next) => {
-    try {
-      const { name, tel, address, openingHours, description, categoryId } = req.body
-
-      if (!name) throw new Error('Restaurant name is required!')
-      const { file } = req
-
-      const filePath = await imgurFileHandler(file)
-      await Restaurant.create({
-        name,
-        tel,
-        address,
-        openingHours,
-        description,
-        image: filePath || null,
-        categoryId
-      })
+  postRestaurant: (req, res, next) => {
+    adminServices.postRestaurant(req, (err, data) => {
+      if (err) return next(err)
       req.flash('success_messages', 'restaurant was successfully created')
-      res.redirect('/admin/restaurants')
-    } catch (err) { next(err) }
+      req.session.createdData = data
+      return res.redirect('/admin/restaurants')
+    })
   },
   getRestaurant: async (req, res, next) => {
     try {
