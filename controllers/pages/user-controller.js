@@ -41,30 +41,26 @@ const userController = {
   },
   getUser: async (req, res, next) => {
     try {
-      const user = await User.findByPk(
-        req.params.id,
-        {
-          include: [
-            {
-              model: Comment,
-              attributes: ['restaurantId'],
-              include: Restaurant
-            },
-            { model: Restaurant, as: 'FavoritedRestaurants', attributes: ['id', 'image'] },
-            { model: User, as: 'Followers', attributes: ['id', 'image'] },
-            { model: User, as: 'Followings', attributes: ['id', 'image'] }
-          ]
-        }
-      )
-
-      const comments = await Comment.findAll({
-        where: { userId: req.params.id },
-        attributes: ['restaurantId'],
-        group: ['restaurantId'],
-        include: [Restaurant],
-        nest: true,
-        raw: true
-      })
+      const [user, comments] = await Promise.all([
+        User.findByPk(
+          req.params.id,
+          {
+            include: [
+              { model: Restaurant, as: 'FavoritedRestaurants', attributes: ['id', 'image'] },
+              { model: User, as: 'Followers', attributes: ['id', 'image'] },
+              { model: User, as: 'Followings', attributes: ['id', 'image'] }
+            ]
+          }
+        ),
+        Comment.findAll({
+          where: { userId: req.params.id },
+          attributes: ['restaurantId'],
+          group: ['restaurantId'],
+          include: [Restaurant],
+          nest: true,
+          raw: true
+        })
+      ])
 
       if (!user) throw new Error("User didn't exist!")
 
