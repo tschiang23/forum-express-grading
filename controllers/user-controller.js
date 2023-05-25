@@ -41,21 +41,29 @@ const userController = {
   },
   getUser: async (req, res, next) => {
     try {
-      // 反查user 確認user是否存在
-      const user = await User.findByPk(
-        req.params.id,
-        {
-          include: [
-            {
-              model: Comment,
-              include: Restaurant
-            }
-          ]
-        }
-      )
+      const [user, comments] = await Promise.all([
+        User.findByPk(
+          req.params.id,
+          {
+            include: [
+              { model: Restaurant, as: 'FavoritedRestaurants', attributes: ['id', 'image'] },
+              { model: User, as: 'Followers', attributes: ['id', 'image'] },
+              { model: User, as: 'Followings', attributes: ['id', 'image'] }
+            ]
+          }
+        ),
+        Comment.findAll({
+          where: { userId: req.params.id },
+          attributes: ['restaurantId'],
+          group: ['restaurantId'],
+          include: [Restaurant],
+          nest: true,
+          raw: true
+        })
+      ])
       if (!user) throw new Error("User didn't exist!")
 
-      res.render('users/profile', { user: user.toJSON() })
+      res.render('users/profile', { user: user.toJSON(), comments })
     } catch (err) { next(err) }
   },
   editUser: async (req, res, next) => {
