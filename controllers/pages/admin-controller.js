@@ -1,6 +1,7 @@
 // controllers/admin-controller.js
-const { Restaurant, User, Category } = require('../models')
-const { imgurFileHandler } = require('../helpers/file-helpers')
+const adminServices = require('../../services/admin-services')
+const { Restaurant, User, Category } = require('../../models')
+const { imgurFileHandler } = require('../../helpers/file-helpers')
 
 const adminController = {
   getUsers: async (req, res, next) => {
@@ -28,15 +29,8 @@ const adminController = {
       next(err)
     }
   },
-  getRestaurants: async (req, res, next) => {
-    try {
-      const restaurants = await Restaurant.findAll({
-        raw: true,
-        nest: true,
-        include: [Category]
-      })
-      res.render('admin/restaurants', { restaurants })
-    } catch (err) { next(err) }
+  getRestaurants: (req, res, next) => {
+    adminServices.getRestaurants(req, (err, data) => err ? next(err) : res.render('admin/restaurants', data))
   },
   createRestaurant: async (req, res, next) => {
     try {
@@ -49,26 +43,13 @@ const adminController = {
       next(err)
     }
   },
-  postRestaurant: async (req, res, next) => {
-    try {
-      const { name, tel, address, openingHours, description, categoryId } = req.body
-
-      if (!name) throw new Error('Restaurant name is required!')
-      const { file } = req
-
-      const filePath = await imgurFileHandler(file)
-      await Restaurant.create({
-        name,
-        tel,
-        address,
-        openingHours,
-        description,
-        image: filePath || null,
-        categoryId
-      })
+  postRestaurant: (req, res, next) => {
+    adminServices.postRestaurant(req, (err, data) => {
+      if (err) return next(err)
       req.flash('success_messages', 'restaurant was successfully created')
-      res.redirect('/admin/restaurants')
-    } catch (err) { next(err) }
+      req.session.createdData = data
+      return res.redirect('/admin/restaurants')
+    })
   },
   getRestaurant: async (req, res, next) => {
     try {
@@ -117,13 +98,12 @@ const adminController = {
       res.redirect('/admin/restaurants')
     } catch (err) { next(err) }
   },
-  deleteRestaurant: async (req, res, next) => {
-    try {
-      const restaurant = await Restaurant.findByPk(req.params.id)
-      if (!restaurant) throw new Error("Restaurant didn't exist!")
-      await restaurant.destroy()
-      res.redirect('/admin/restaurants')
-    } catch (err) { next(err) }
+  deleteRestaurant: (req, res, next) => {
+    adminServices.deleteRestaurant(req, (err, data) => {
+      if (err) return next(err)
+      req.session.deletedData = data
+      return res.redirect('/admin/restaurants')
+    })
   }
 }
 module.exports = adminController
